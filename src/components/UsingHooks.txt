@@ -1,0 +1,294 @@
+
+import { useState, useEffect } from 'react';
+import FormElement from './FormElement';
+import { FormContext } from './FormContext';
+import Header from './Header';
+import Footer from './Footer'
+import Menu from "./Menu";
+import axios from 'axios'
+
+
+
+//hey i will use react hook here
+
+function CompleteSurvey() {
+
+
+  const [Get_Survey_Details, Set_Survey_Details] = useState({});
+
+  // Call_Survey_Details form localStorage
+  const SingleSurvey = JSON.parse(localStorage.getItem('SingleSurvey'));
+  const Call_Survey_Details = SingleSurvey.form;
+  
+
+
+
+
+  useEffect(() => {
+    Set_Survey_Details(Call_Survey_Details)
+
+  }, [])
+
+  const { form, title } = Get_Survey_Details ;
+
+  //Categories of the single survey
+  // form = [];
+  // for (let i = 0; i < SingleSurvey.form.length; i++) {
+  //   form.push(SingleSurvey.form[i]);
+  // }
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
+    const mytoken = JSON.parse(localStorage.getItem('user'));
+    const token = mytoken.token;
+    const SingleSurvey = JSON.parse(localStorage.getItem('SingleSurvey'));
+    const SingleSurveyPk=SingleSurvey.pk
+     const to_Send= JSON.parse(localStorage.getItem('Response_to_Send'))
+     console.log(to_Send)
+
+    const Responsebody =
+    {
+      survey_pk: SingleSurveyPk, 
+      form: 
+      to_Send
+      
+      }
+  
+
+    console.log(Responsebody);
+
+    axios.post("https://gfso.chinikiguard.com/survey/api/create/response/", Responsebody,
+      {
+        headers:
+        {
+          'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`,
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET,POST,HEAD,OPTIONS',
+          'Access-Control-Allow-Credentials': true
+        },
+      })
+      .then(res => {
+            if (res.data) {
+                localStorage.setItem("Response_Success", JSON.stringify(res.data));
+            }
+            console.log(res.data)
+            window.location = "/AvailableSurvey"
+
+        })
+    console.log(Get_Survey_Details)
+  }
+ 
+  const handleChange = (id, event) => {
+
+    const newElements = { ...Get_Survey_Details }
+
+    
+    newElements[0].fields.forEach(field => {
+      const { field_type, pk } = field;
+      if (id === pk) {
+      
+            field['value'] = event.target.value;
+               
+        }
+      Set_Survey_Details(newElements)
+    });
+    console.log(Get_Survey_Details)
+    localStorage.setItem("Response_to_Send", JSON.stringify(Get_Survey_Details));
+
+  }
+ 
+
+  return (
+    
+    <FormContext.Provider value={{ handleChange}}>
+    <Header />
+
+
+
+      <div className="content-wrapper" style={{ minHeight: 1602 }}>
+        <Menu /><br />
+        <section className="content">
+          <div className="container-fluid">
+            <div className="row">
+              {/* left column */}
+              <div className="col-md-12">
+              <center><h2 class="mt-4 mb-2">{SingleSurvey.title}</h2></center>
+              {Call_Survey_Details.map(myfield => (
+
+                <div className="card card-">
+                  <div className="card-header">
+                    <h3 className="card-title">{myfield.name}</h3>
+                  </div>
+                  <div className="card-body">
+                    <h6 className="">{myfield.type}</h6>
+                    
+                    <form>
+                    <div className="row">
+                      
+                    {
+                    myfield.fields.map((field, i) => <FormElement key={i} field={field} />) 
+                                       
+                    }
+                    </div>                   
+                    </form>            
+                  </div>
+                  {/* /.card-body */}
+                </div>
+              ))}
+                <button type="submit" className="btn btn-primary" onClick={(e) => handleSubmit(e)}>Submit</button>
+
+                  
+              </div>
+           </div>
+      </div>
+     </section>
+ 
+    </div>
+    </FormContext.Provider>  
+    
+    );
+}
+
+export default CompleteSurvey;
+
+
+export default CompleteSurvey;
+
+
+
+
+import React, { Component, useState, useEffect } from "react";
+import FormElement from './FormElement';
+import { FormContext } from './FormContext';
+import Header from './Header';
+import Footer from './Footer'
+import Menu from "./Menu";
+import { Redirect, Link } from 'react-router-dom';
+import AuthService from "../services/auth.service";
+
+
+
+
+export default class CompleteSurvey extends Component {
+
+  constructor(props) {
+      super(props);
+      this.state = {
+         
+      };
+  }
+
+
+  handleSubmit(e) {
+    e.preventDefault();
+    this.setState({
+      message: "",
+      successful: false,
+      loading:true
+    });
+    this.form.validateAll();
+    if (this.checkBtn.context._errors.length === 0) {
+      AuthService.createNewUser(
+        this.state.username,
+        this.state.password,
+        this.state.first_name,
+        this.state.last_name,
+        this.state.address,
+        this.state.lga,
+        this.state.state,
+        this.state.dob,
+        this.state.email,
+        this.state.phone_number,
+
+      ).then(
+        response => {
+          this.setState({
+            message: response.data.message,
+            successful: true
+          });
+        },
+        error => {
+          const resMessage =
+            (error.response &&
+              error.response.data.detail &&
+              error.response.data.detail) ||
+            error.message ||
+            error.toString();
+
+          this.setState({
+            successful: false,
+            message: resMessage
+          });
+        }
+      );
+    }
+  }
+  
+  
+  render() {
+
+      if (!localStorage.getItem('user')) {
+          return (<Redirect to={'/'} />)
+      }
+    // Call_Survey_Details form localStorage
+    const SingleSurvey = JSON.parse(localStorage.getItem('SingleSurvey'));
+    const Call_Survey_Details = SingleSurvey.form;
+
+  return (
+    
+    <FormContext.Provider >
+    <Header />
+
+
+
+      <div className="content-wrapper" style={{ minHeight: 1602 }}>
+        <Menu /><br />
+        <section className="content">
+          <div className="container-fluid">
+            <div className="row">
+              {/* left column */}
+              <div className="col-md-12">
+              <center><h2 class="mt-4 mb-2">{SingleSurvey.title}</h2></center>
+              {Call_Survey_Details.map(myfield => (
+
+                <div className="card card-">
+                  <div className="card-header">
+                    <h3 className="card-title">{myfield.name}</h3>
+                  </div>
+                  <div className="card-body">
+                    <h6 className="">{myfield.type}</h6>
+                    
+                    <form>
+                    <div className="row">
+                      
+                    {
+                    myfield.fields.map((field, i) => <FormElement key={i} field={field} />) 
+                                       
+                    }
+                    </div>                   
+                    </form>            
+                  </div>
+                  {/* /.card-body */}
+                </div>
+              ))}
+                <button type="submit" className="btn btn-primary" 
+                
+                // onClick={(e) => handleSubmit(e)}
+                onClick={this.handleSubmit.bind(this)}
+
+                >Submit</button>
+
+                  
+              </div>
+           </div>
+      </div>
+     </section>
+ 
+    </div>
+    </FormContext.Provider>  
+    
+    );
+}
+}
